@@ -498,3 +498,7 @@ preview behavior and PDF exports. No actual held-modifier desktop click is claim
 that integration is awaiting accessibility approval and physical desktop validation.
 
 TeX temporary work can be relocated with `TOOLKIT_TEX_TMPDIR` (an existing directory). PDF.js and its worker, fonts and character maps are served locally from the pinned npm dependency, with no runtime CDN requests. Renderer source: [Mozilla PDF.js examples](https://mozilla.github.io/pdf.js/examples/).
+
+## Independent repository migration (2026-10-27)
+
+Source and existing local data moved to `/home/a/Documents/products/toolkit`, retaining the product commit history. This checkout now owns its `.git` and `origin`; commit and push here independently. This supersedes the earlier hub-only or root-forwarded publication arrangement. Existing configuration locations, command names, and user data are preserved.

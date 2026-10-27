@@ -7,7 +7,7 @@ A local, modular file-rendering toolkit. Convert PDF to Markdown with MarkItDown
 Requires Node.js 22 or newer and npm. Chrome or Chromium is needed for Markdown PDF export and Mermaid diagrams; ordinary Markdown preview works without it.
 
 ```bash
-cd /home/a/Documents/someProducts/toolkit
+cd /home/a/Documents/products/toolkit
 npm install
 npm start
 ```
@@ -160,6 +160,8 @@ run. See [description.md](description.md) for limits.
 
 For native circular desktop tools, the held Super+Alt+click integration and
 FileX's **T** vertical tool menu, install the adjacent
-[Arch/KDE integration](../integrate-toolkit-arch/README.md). Its native save dialog
+[Arch/KDE integration](https://github.com/Azusalina/integrate-toolkit-arch/blob/master/README.md). Its native save dialog
 lets you choose the result directory and filename. This integration is separate
 from the existing local web login service.
+
+This is an independent repository at `/home/a/Documents/products/toolkit`, published as [Azusalina/toolkit](https://github.com/Azusalina/toolkit). Run `git add`, `git commit`, and `git push` here. Its source has moved out of `someProducts`; hub pushes no longer publish this project.
