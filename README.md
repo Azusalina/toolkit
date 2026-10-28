@@ -23,6 +23,12 @@ For **JS / MJS → SVG**, choose a `.js`/`.mjs` file or paste code, click
 **Generate SVG**, enter a filename and click **Download SVG**. Chrome/Chromium
 is required.
 
+For **Scribd PDF**, keep the downloader checkout in `src/scribd-downloader`,
+install matching Chromium and ChromeDriver, then run `npm run scribd:setup`.
+Paste a document URL, optionally set the filename and click **Generate PDF**.
+When ready, use the preview, **Open PDF**, or **Download PDF**. **Cancel** stops
+an export. Links stay local to this toolkit session and expire after 15 minutes.
+
 For **PDF to Markdown**, install the optional local converter once:
 
 ```bash

@@ -24,7 +24,9 @@
     "formats:setup": "python3 scripts/setup-formats.py",
     "test:formats": ".venv-formats/bin/python tests/test_photo_formats.py && node tests/formats-browser.js",
     "test:tex": "node tests/tex-browser.js",
-    "test:flowchart": "node tests/flowchart-browser.js"
+    "test:flowchart": "node tests/flowchart-browser.js",
+    "scribd:setup": "python3 scripts/setup-scribd.py",
+    "test:scribd": ".venv-scribd/bin/python tests/test_scribd.py && node tests/scribd-browser.js"
   },
   "dependencies": {
     "acorn": "8.19.0",

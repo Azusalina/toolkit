@@ -8,6 +8,7 @@ const tools=[
  ['format-audio-tab','Audio formats','format-audio'],
  ['format-video-tab','Video formats','format-video'],
  ['media-tab','URL audio','media'],
+ ['scribd-tab','Scribd PDF','scribd'],
  ['code-flowchart-tab','JS / MJS → SVG','code-flowchart'],
  ['omr-tab','OMR scan','omr'],
 ];

@@ -588,3 +588,52 @@ and real browser TIFF/DNG/M4A/MOV downloads. Original files remain unchanged.
 
 The full 31-test Node suite, three Python pixel/RAW checks and browser conversion
 workflow passed in the isolated review copy.
+
+
+## Scribd PDF adapter
+
+The **Scribd PDF** tool adapts the user-provided separate Git checkout at
+`src/scribd-downloader/scribd-downloader.py` (upstream
+[themrsami/scribd-downloader](https://github.com/themrsami/scribd-downloader),
+locally inspected commit `0396d95`). Its source remains in that separate checkout;
+toolkit does not stage it as an accidental embedded-repository Git link.
+`npm run scribd:setup` installs Selenium 4.51.0 and pypdf 6.21.3 in ignored
+`.venv-scribd`. ChromeDriver must match the installed Chromium; the adapter uses
+local binaries rather than Selenium Manager downloads. `TOOLKIT_CHROMIUM` and
+`TOOLKIT_CHROMEDRIVER` override `/usr/bin/chromium` and `/usr/bin/chromedriver`.
+
+The worker imports the repository's module, opens the canonical Scribd embed,
+uses its print preparation and bounded page-batch export functions, then checks
+that the resulting PDF contains every detected document page. It reconstructs a
+PDF from rendered pages; it does not retrieve or guarantee the original uploaded
+PDF bytes. No ordinary browser profile, password or login cookie is accessed.
+The upstream `--no-sandbox` argument is removed. No CAPTCHA-solving flow is added;
+unavailable/restricted pages or verification screens produce an error.
+
+Jobs are independent per toolkit view with one export globally. Progress is
+polled, cancellation kills the full subprocess group (including browser/driver),
+and work uses temporary folders. Limits: 500 pages, 15 minutes, 100 MB PDF, 512 MB
+temporary data. Expired, failed, cancelled and shutdown jobs release their files.
+Successful PDFs are retained for 15 minutes. Preview/download links use random
+48-hex IDs, require the existing local HttpOnly session cookie and local-origin
+checks, and are never public internet links. Source paths are not exposed.
+The same PDF endpoint serves inline previews and explicit attachment downloads.
+
+The interface contains URL, optional output filename, Generate/Cancel, progress,
+PDF preview and Open/Download links. Existing customizable navigation and
+independent-page inputs are retained. The source checkout is a local prerequisite;
+clone it into `src/scribd-downloader` on a new installation before setup.
+
+
+Validation: 33 Node tests passed, including authenticated inline/download links,
+per-view state, expiry, cancellation and error paths. The supplied exporter was
+run with Selenium against an offline five-page fixture in three batches; PDF
+page count, extracted text, portrait/landscape geometry and profile cleanup were
+verified. The browser workflow checked actual PDF downloads, filename handling,
+embedded preview, separate tabs and mobile layout. Test artifacts are in
+`/tmp/toolkit-validation/scribd/`.
+
+Live-source boundary: the previously supplied document
+`970481430/2025-HKDSE-Economics-Paper-1` returned no printable pages in the fresh
+headless session. No successful real Scribd PDF download is claimed for that URL.
+Scribd-side access or verification behavior may vary by document and environment.

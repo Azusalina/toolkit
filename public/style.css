@@ -176,3 +176,14 @@ body.zen-mode{overflow:hidden}
 #code-flowchart-status{font-size:13px;overflow-wrap:anywhere}
 #code-flowchart-preview{overflow:auto;margin-top:16px;max-height:75vh}
 #code-flowchart-image{display:block;max-width:100%;height:auto;background:white}
+
+.scribd-mode .sidebar,.scribd-mode #sidebar-toggle,.scribd-mode .file-panel,.scribd-mode #markdown-workspace,.scribd-mode #message,.scribd-mode #connection{display:none!important}
+.scribd-mode main{margin-left:0;width:100%}
+#scribd-workspace{padding:16px;border:1px solid #ffffff18;background:#191919a6}
+#scribd-workspace label{display:block;margin:12px 0 8px;font-size:13px}
+#scribd-url{flex:1;min-width:0}#scribd-name{max-width:100%}
+#scribd-status{font-size:13px;white-space:pre-line;overflow-wrap:anywhere}
+#scribd-result{display:flex;flex-wrap:wrap;gap:16px;margin:16px 0;font-size:13px}
+#scribd-result a{color:#eee}#scribd-result span{color:#aaa}
+#scribd-preview{height:75vh;min-height:400px;width:100%;background:#262626}
+@media(max-width:700px){#scribd-url{flex-basis:100%}}

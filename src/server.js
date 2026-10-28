@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { ScribdJobs } from './scribd/service.js';
 import { codeFlowchart, restoreCodeLabels } from './flowchart/index.js';
 import { renderMermaid } from './core/mermaid.js';
 import { FORMAT_OPTIONS, formatOption } from '../public/format-options.js';
@@ -17,7 +18,8 @@ import { readSource, documentStyle } from './core/files.js';
 import { exportPdf } from './core/pdf.js';
 import { scanMedia, withMediaWork, downloadMedia, convertMedia, sendMedia, mediaFormat, abortMedia } from './media/service.js';
 
-export async function createToolkit({ port = 4177, filename, interval = 300, baseDir = process.cwd() } = {}) {
+export async function createToolkit({ port = 4177, filename, interval = 300, baseDir = process.cwd(), scribdOptions } = {}) {
+  const scribd = new ScribdJobs(scribdOptions);
   const registry = new ModuleRegistry();
   const token = randomBytes(24).toString('hex');
   const style = await documentStyle();
@@ -27,6 +29,7 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
   if (initialPath) { registry.forFile(initialPath); await readSource(initialPath); }
   const publicFiles = new Map([['/', ['index.html', 'text/html']], ['/app.js', ['app.js', 'text/javascript']], ['/style.css', ['style.css', 'text/css']], ['/document.css', ['document.css', 'text/css']], ['/media.js', ['media.js', 'text/javascript']], ['/pdfmd.js', ['pdfmd.js', 'text/javascript']], ['/tool-preferences.js', ['tool-preferences.js', 'text/javascript']], ['/formats.js', ['formats.js', 'text/javascript']], ['/format-options.js', ['format-options.js', 'text/javascript']], ['/tools.js', ['tools.js', 'text/javascript']], ['/photos.js', ['photos.js', 'text/javascript']], ['/photo-pdf.js', ['photo-pdf.js', 'text/javascript']], ['/pdf-pages.js', ['pdf-pages.js', 'text/javascript']], ['/pdf-selection.js', ['pdf-selection.js', 'text/javascript']], ['/omr.js', ['omr.js', 'text/javascript']], ['/lib/pdf-lib.js', ['../node_modules/pdf-lib/dist/pdf-lib.esm.min.js', 'text/javascript']]]);
   publicFiles.set('/code-flowchart.js', ['code-flowchart.js', 'text/javascript']);
+  publicFiles.set('/scribd.js', ['scribd.js', 'text/javascript']);
   publicFiles.set('/tex-preview.js', ['tex-preview.js', 'text/javascript']);
   for (const name of ['pdf.mjs', 'pdf.worker.mjs']) publicFiles.set(`/lib/pdfjs/${name}`, [`../node_modules/pdfjs-dist/build/${name}`, 'text/javascript']);
   for (const folder of ['cmaps', 'standard_fonts', 'wasm']) {
@@ -41,6 +44,7 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
     clearTimeout(view.expiry);
     view.expiry = setTimeout(() => {
       if (view.clients.size || view.exporting) return scheduleExpiry(viewId, view);
+      scribd.clear(viewId).catch(() => {});
       view.close(); views.delete(viewId);
     }, 30 * 60 * 1000);
     view.expiry.unref();
@@ -75,6 +79,8 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
       }
       if (!url.pathname.startsWith('/api/')) return json(res, { error: 'Not found.' }, 404);
       if (!(req.headers.cookie || '').split(';').some(cookie => cookie.trim() === sessionCookie)) return json(res, { error: 'Refresh the toolkit at its local address to start a session. Allow cookies for this local address.' }, 403);
+      const scribdFile = url.pathname.match(/^\/api\/scribd\/file\/([a-f0-9]{48})$/);
+      if (scribdFile && req.method === 'GET') return await scribd.send(scribdFile[1], res, url.searchParams.get('download') === '1');
       if (req.method === 'POST' && url.pathname === '/api/views') {
         const options = await body(req);
         const previous = typeof options.previousView === 'string' ? views.get(options.previousView) : null;
@@ -120,6 +126,9 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
           return json(res, { svg: restoreCodeLabels(result.svg) });
         } finally { view.flowchartBusy = false; flowchartJobs--; }
       }
+      if (url.pathname === '/api/scribd/start' && req.method === 'POST') return json(res, await scribd.start(viewId, await body(req)));
+      if (url.pathname === '/api/scribd/status' && req.method === 'GET') return json(res, scribd.status(viewId));
+      if (url.pathname === '/api/scribd/cancel' && req.method === 'POST') { await scribd.clear(viewId); return json(res, scribd.status(viewId)); }
       if (req.method === 'POST' && url.pathname === '/api/pdfmd/convert') return json(res, await convertPdfMarkdown(view, req, res));
       if (req.method === 'POST' && url.pathname === '/api/formats/convert') {
         const kind=url.searchParams.get('kind'),format=url.searchParams.get('format');
@@ -220,6 +229,7 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve); });
   const url = `http://127.0.0.1:${server.address().port}/`;
   const close = async () => {
+    await scribd.close();
     for (const view of views.values()) { abortMedia(view); abortPdfMarkdown(view); view.close(); }
     views.clear();
     server.closeIdleConnections();
