@@ -73,12 +73,15 @@ For local file format conversion, open **Photo formats**, **Audio formats**, or
 **Convert … and download**. Each result is saved separately; originals are not
 changed. The three tools can be hidden/reordered with **Customize tools**.
 
-- Photos: JPG, PNG, WebP, AVIF. EXIF direction is applied; JPG uses white behind
+- Photos: JPG, PNG, WebP, AVIF, TIFF, linear DNG. EXIF direction is applied; JPG uses white behind
   transparency. Animated image inputs use only their first frame.
-- Audio: MP3, FLAC, WAV, M4A, AAC, Opus, OGG.
-- Video: MP4, WebM, MKV, MOV, AVI; includes the first audio track when present.
+- Audio: MP3, FLAC, WAV, ALAC (`.m4a`), M4A/AAC, AAC, Opus, OGG.
+- Video: MP4, WebM, MKV, MOV/H.264, ProRes 422 HQ (`.mov`), AVI; includes the first audio track when present.
 
-Install photo support once with `npm run formats:setup` (Python 3/venv required).
+Install or update photo support with `npm run formats:setup` (Python 3/venv required).
+DNG inputs are developed locally; TIFF output retains their 16-bit RGB data.
+DNG export produces linear RGB, not recovered camera sensor RAW; transparency
+is flattened onto white.
 Audio/video conversion requires FFmpeg and ffprobe on PATH. Files are processed
 on this computer by the local toolkit server. Input limits: photos 25 MB and
 32 megapixels, audio 100 MB, video 250 MB. **Cancel current conversion** works

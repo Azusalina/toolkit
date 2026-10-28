@@ -95,34 +95,35 @@ not accepted.
 
 | Tool | Output formats | Implementation |
 | --- | --- | --- |
-| Photo formats | JPG, PNG, WebP, AVIF | Pillow 13.0.0 in `.venv-formats` |
-| Audio formats | MP3, FLAC, WAV, M4A, AAC, Opus, OGG | Local FFmpeg/ffprobe |
-| Video formats | MP4, WebM, MKV, MOV, AVI | Local FFmpeg/ffprobe |
+| Photo formats | JPG, PNG, WebP, AVIF, TIFF, linear DNG | Pillow 13.0.0 in `.venv-formats` |
+| Audio formats | MP3, FLAC, WAV, ALAC/M4A, M4A/AAC, AAC, Opus, OGG | Local FFmpeg/ffprobe |
+| Video formats | MP4, WebM, MKV, MOV/H.264, ProRes/MOV, AVI | Local FFmpeg/ffprobe |
 
-`npm run formats:setup` installs only Pillow in an ignored product-local venv.
+`npm run formats:setup` installs Pillow, RawPy, tifffile and NumPy in an ignored product-local venv.
 `TOOLKIT_FORMATS_PYTHON`, `TOOLKIT_FFMPEG` and `TOOLKIT_FFPROBE` override the
 executables if needed. Available input decoding and output encoding depend on
 the installed versions/builds. The current machine was verified for all listed
 target formats; no cloud service or extra yt-dlp dependency is involved.
 
-Photos accept JPEG/PNG/WebP/AVIF/BMP/TIFF/GIF inputs, normalize EXIF orientation,
+Photos accept JPEG/PNG/WebP/AVIF/BMP/TIFF/GIF/DNG inputs, normalize EXIF orientation,
 and convert the first image frame to the chosen output. RGB-compatible ICC and
 remaining EXIF data are copied where supported. JPG flattens transparent pixels
 onto white at quality 95; WebP uses quality 95 and AVIF 90. PNG is lossless. Alpha
-is retained in PNG/WebP/AVIF. Conversion is not a guarantee of identical metadata
+is retained in PNG/WebP/AVIF/TIFF. Conversion is not a guarantee of identical metadata
 or color management for unusual color spaces. Inputs are limited to 25 MB and
 32 megapixels; processing times out after two minutes.
 
 Audio converts the first audio stream. MP3 uses LAME quality 0 VBR; FLAC uses
-lossless encoding; WAV uses 24-bit PCM; M4A/AAC use 256 kbps AAC; Opus uses
+lossless encoding; ALAC uses an M4A container and 24-bit integer encoding; WAV uses 24-bit PCM; M4A/AAC use 256 kbps AAC; Opus uses
 192 kbps at 48 kHz; OGG uses Vorbis quality 6. Multichannel MP3 sources are mixed
 to stereo. Uncompressed/lossless containers do not upgrade a lossy input.
 Input is capped at 100 MB with a ten-minute timeout.
 
 Video transcodes the first non-cover-art video and optional first audio stream.
 MP4/MOV/MKV use H.264 CRF 20 and AAC 192 kbps; WebM uses VP9 CRF 30 and Opus
-160 kbps; AVI uses MPEG-4 Part 2 quality 3 and MP3 192 kbps. Output uses 8-bit
-YUV420 for compatibility. Odd dimensions gain at most a one-pixel padded edge;
+160 kbps; AVI uses MPEG-4 Part 2 quality 3 and MP3 192 kbps. These outputs use 8-bit
+YUV420 for compatibility; the separate ProRes 422 HQ/MOV option uses 10-bit
+YUV422 and PCM audio. Odd dimensions gain at most a one-pixel padded edge;
 no cropping or requested resizing is applied. Multiple audio tracks, subtitles,
 attachments, HDR color management, and lossless video remuxing are outside this
 conversion workflow. Video input is capped at 250 MB and runs for at most
@@ -537,3 +538,53 @@ checks and browser download workflow also passed after unreachable-path pruning.
 Actual SVG output and desktop/mobile screenshots are in
 `/tmp/toolkit-validation/flowchart/`. Parser API reference:
 [Acorn documentation](https://github.com/acornjs/acorn/tree/master/acorn).
+
+
+## Extended archival/editing formats (2026-10-28)
+
+Photo outputs include TIFF and 16-bit linear RGB DNG. TIFF uses Deflate lossless
+compression, preserves alpha, and retains 16-bit grayscale and supported 16-bit
+RGB/RGBA TIFF data. Camera DNG files are detected by their TIFF DNGVersion tag,
+not filenames or embedded previews, and developed using RawPy/LibRaw at 16-bit
+sRGB with camera white balance and auto-brightening disabled. DNG-to-TIFF retains
+those 16 bits; ordinary PNG/JPG/WebP/AVIF paths output 8-bit rendered RGB.
+TIFF and DNG inputs use their first image. Unsupported LibRaw variants report an
+error. TIFF encodings requiring additional imagecodecs are not guaranteed.
+
+Linear DNG export decodes the rendered sRGB transfer function and writes
+LinearRaw photometric data, DNG version/white/black/crop/color-matrix tags and
+16-bit samples. It does not invent Bayer sensor measurements or recover RAW
+latitude lost in JPEG. Alpha is flattened onto white. Tagged 8-bit images are
+color-converted to sRGB; 16-bit TIFF input with a non-sRGB ICC profile must first
+be converted to sRGB. DNG import/export does not preserve all camera metadata.
+The output is independently read by LibRaw in validation; Adobe Camera Raw and
+other desktop applications have not been tested.
+
+ALAC is a distinct audio output encoded by FFmpeg's `alac` encoder in an M4A
+container, with 24-bit integer encoding. FLAC and WAV remain available; WAV uses
+24-bit PCM. These formats cannot recover source information already discarded.
+ProRes is a distinct ProRes 422 HQ video output (`prores_ks`, profile 3,
+10-bit 4:2:2, MOV container, optional 24-bit PCM audio). The ordinary MOV option
+retains H.264/AAC and is labeled accordingly. Existing geometry, limits,
+cancellation, temporary cleanup and source-preservation behavior remain in place.
+ProRes is lossy intra-frame encoding and can create large outputs; it does not
+create detail or dynamic range absent from the source.
+
+Format IDs are distinct from extensions: `alac` downloads `.m4a`, `prores`
+downloads `.mov`; shared `formatExtension()` keeps server output and editable
+browser download names consistent. Install photo dependencies with
+`npm run formats:setup`: Pillow 13.0.0, RawPy 0.27.1, tifffile 2026.10.15 and
+NumPy 2.5.4. Existing installations need to rerun setup for DNG support.
+
+Implementation references: [RawPy API](https://letmaik.github.io/rawpy/api/rawpy.RawPy.html),
+[tifffile DNG tag example](https://github.com/cgohlke/tifffile/blob/master/examples/write_dng.py).
+DNG linear RGB implementation uses its own color matrix and no synthetic mosaic.
+
+
+Validation includes all 20 output choices, LibRaw decoding of linear and synthetic
+CFA DNG, 16-bit TIFF pixels/orientation, DNG color roundtrip, lossless PCM equality
+for ALAC/FLAC/WAV, ProRes HQ profile/pixel format/audio, reverse media conversion,
+and real browser TIFF/DNG/M4A/MOV downloads. Original files remain unchanged.
+
+The full 31-test Node suite, three Python pixel/RAW checks and browser conversion
+workflow passed in the isolated review copy.

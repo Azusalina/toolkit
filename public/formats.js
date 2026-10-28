@@ -1,4 +1,4 @@
-import {FORMAT_OPTIONS} from './format-options.js';
+import {FORMAT_OPTIONS,formatExtension} from './format-options.js';
 const $=id=>document.getElementById(id),states={};let activeJob;
 for(const kind of Object.keys(FORMAT_OPTIONS))states[kind]={message:'Choose a local file to convert.'};
 function update(){
@@ -11,7 +11,7 @@ function update(){
 }
 function outputName(kind){
  const original=$(`format-${kind}-file`).files[0]?.name||'file';
- return original.replace(/\.[^.]+$/,'')+'-converted.'+$(`format-${kind}-format`).value;
+ return original.replace(/\.[^.]+$/,'')+'-converted.'+formatExtension(kind,$(`format-${kind}-format`).value);
 }
 for(const [kind,options]of Object.entries(FORMAT_OPTIONS)){
  const file=$(`format-${kind}-file`),format=$(`format-${kind}-format`),name=$(`format-${kind}-name`);
@@ -21,7 +21,7 @@ for(const [kind,options]of Object.entries(FORMAT_OPTIONS)){
   name.value=outputName(kind);
   states[kind].message=file.files[0]?`Ready: ${file.files[0].name} · ${(file.files[0].size/1048576).toFixed(2)} MB`:'Choose a local file to convert.';update();
  });
- format.addEventListener('change',()=>{name.value=name.value.replace(/\.[^.]+$/,'')+'.'+format.value;});
+ format.addEventListener('change',()=>{name.value=name.value.replace(/\.[^.]+$/,'')+'.'+formatExtension(kind,format.value);});
  $(`format-${kind}-cancel`).addEventListener('click',()=>activeJob?.controller.abort());
  $(`format-${kind}-convert`).addEventListener('click',async()=>{
   const input=file.files[0];if(!input||activeJob)return;
@@ -32,7 +32,8 @@ for(const [kind,options]of Object.entries(FORMAT_OPTIONS)){
    const response=await fetch(`/api/formats/convert?kind=${kind}&format=${target}`,{method:'POST',headers:{'X-Toolkit-View':view,'Content-Type':'application/octet-stream'},body:input,signal:controller.signal});
    if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(data.error||'Conversion failed.');}
    let filename=name.value.trim().replace(/[\\/]/g,'_')||outputName(kind);
-   if(!filename.toLowerCase().endsWith('.'+target))filename+='.'+target;
+   const extension=formatExtension(kind,target);
+   if(!filename.toLowerCase().endsWith('.'+extension))filename+='.'+extension;
    if(filename.toLowerCase()===input.name.toLowerCase())filename=outputName(kind);
    const url=URL.createObjectURL(await response.blob()),link=document.createElement('a');link.href=url;link.download=filename;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
    states[kind].message=`Downloaded ${filename}. Original file unchanged.`;

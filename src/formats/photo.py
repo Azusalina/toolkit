@@ -10,10 +10,13 @@ def convert(source, output, target):
     socket.socket.connect = offline
     socket.socket.connect_ex = offline
     from PIL import Image, ImageOps
-    outputs = {'jpg': 'JPEG', 'png': 'PNG', 'webp': 'WEBP', 'avif': 'AVIF'}
+    outputs = {'jpg': 'JPEG', 'png': 'PNG', 'webp': 'WEBP', 'avif': 'AVIF', 'tiff': 'TIFF', 'dng': 'DNG'}
     if target not in outputs:
-        raise ValueError('Choose JPG, PNG, WebP or AVIF.')
+        raise ValueError('Choose a supported photo output format.')
     Image.MAX_IMAGE_PIXELS = 32_000_000
+    from dng import converted_dng
+    if converted_dng(source, output, target):
+        return
     with Image.open(source, formats=['JPEG', 'PNG', 'WEBP', 'AVIF', 'BMP', 'TIFF', 'GIF']) as original:
         if original.width * original.height > 32_000_000:
             raise ValueError('Choose a photo with at most 32 megapixels.')
@@ -22,7 +25,8 @@ def convert(source, output, target):
         image.load()
         exif = image.getexif()
         alpha = image.mode in ('RGBA', 'LA') or 'transparency' in image.info
-        image = image.convert('RGBA' if alpha else 'RGB')
+        if target != 'tiff':
+            image = image.convert('RGBA' if alpha else 'RGB')
         if target == 'jpg' and alpha:
             opaque = Image.new('RGB', image.size, 'white')
             opaque.paste(image, mask=image.getchannel('A'))
@@ -36,6 +40,7 @@ def convert(source, output, target):
         if target == 'jpg': options.update(quality=95, subsampling=0)
         elif target == 'webp': options.update(quality=95, method=4)
         elif target == 'avif': options.update(quality=90, speed=6)
+        elif target == 'tiff': options.update(compression='tiff_deflate')
         image.save(output, outputs[target], **options)
 
 if __name__ == '__main__':

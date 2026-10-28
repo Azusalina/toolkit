@@ -22,7 +22,7 @@
     "autostart:remove": "python3 scripts/autostart.py uninstall",
     "test:pdfmd": "node tests/pdfmd-browser.js",
     "formats:setup": "python3 scripts/setup-formats.py",
-    "test:formats": "node tests/formats-browser.js",
+    "test:formats": ".venv-formats/bin/python tests/test_photo_formats.py && node tests/formats-browser.js",
     "test:tex": "node tests/tex-browser.js",
     "test:flowchart": "node tests/flowchart-browser.js"
   },

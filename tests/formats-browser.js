@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,rm,readFile} from 'node:fs/promises';import path from 'node:path';import os from 'node:os';
 import {promisify} from 'node:util';import {execFile} from 'node:child_process';
+import {formatExtension} from '../public/format-options.js';
 import {chromium} from 'playwright-core';import {createToolkit} from '../src/server.js';import {findChromium} from '../src/core/pdf.js';
 const run=promisify(execFile),folder=await mkdtemp(path.join(os.tmpdir(),'toolkit-formats-browser-')),evidence='/tmp/toolkit-validation/formats';await mkdir(evidence,{recursive:true});
 await run('.venv-formats/bin/python',['-c',"from PIL import Image; import sys; Image.new('RGBA',(80,60),(180,30,20,150)).save(sys.argv[1])",path.join(folder,'photo.png')]);
@@ -13,18 +14,19 @@ try{
  await page.goto(app.url);await page.waitForFunction(()=>history.state?.toolkitView);
  await page.evaluate(()=>localStorage.setItem('toolkit-tools-v1',JSON.stringify({order:['markdown-tab','omr-tab'],hidden:['omr-tab']})));await page.reload();
  assert.equal(await page.locator('#omr-tab').isVisible(),false);
- for(const [kind,source,target]of [['photo','photo.png','webp'],['audio','audio.wav','m4a'],['video','video.mp4','webm']]){
+ for(const [kind,source,target]of [['photo','photo.png','tiff'],['photo','photo.png','dng'],['audio','audio.wav','alac'],['video','video.mp4','prores']]){
+  const extension=formatExtension(kind,target);
   await page.locator(`#format-${kind}-tab`).click();
   await page.locator(`#format-${kind}-file`).setInputFiles(path.join(folder,source));
   await page.locator(`#format-${kind}-format`).selectOption(target);
-  assert.equal(await page.locator(`#format-${kind}-name`).inputValue(),`${kind}-converted.${target}`);
+  assert.equal(await page.locator(`#format-${kind}-name`).inputValue(),`${kind}-converted.${extension}`);
   const promise=page.waitForEvent('download');await page.locator(`#format-${kind}-convert`).click();const download=await promise;
-  assert.equal(download.suggestedFilename(),`${kind}-converted.${target}`);await download.saveAs(`${evidence}/${kind}.${target}`);
+  assert.equal(download.suggestedFilename(),`${kind}-converted.${extension}`);await download.saveAs(`${evidence}/${kind}.${extension}`);
   await page.locator(`#format-${kind}-status`).filter({hasText:'Downloaded'}).waitFor();
-  if(kind==='photo')await run('.venv-formats/bin/python',['-c',"from PIL import Image; import sys; im=Image.open(sys.argv[1]); assert im.format=='WEBP'; assert im.size==(80,60)",`${evidence}/${kind}.${target}`]);
-  else{const {stdout}=await run('ffprobe',['-v','error','-show_streams','-of','json',`${evidence}/${kind}.${target}`]);const streams=JSON.parse(stdout).streams;assert.ok(streams.find(s=>s.codec_name===(kind==='audio'?'aac':'vp9')));}
+  if(kind==='photo')await run('.venv-formats/bin/python',['-c',target==='dng'?"import rawpy,sys; raw=rawpy.imread(sys.argv[1]); assert raw.postprocess().shape==(60,80,3); raw.close()":"from PIL import Image; import sys; im=Image.open(sys.argv[1]); assert im.format=='TIFF'; assert im.size==(80,60)",`${evidence}/${kind}.${extension}`]);
+  else{const {stdout}=await run('ffprobe',['-v','error','-show_streams','-of','json',`${evidence}/${kind}.${extension}`]);const streams=JSON.parse(stdout).streams;assert.ok(streams.find(s=>s.codec_name===(kind==='audio'?'alac':'prores')));}
  }
- await run('ffmpeg',['-y','-v','error','-i',`${evidence}/video.webm`,'-frames:v','1',`${evidence}/video-frame.png`]);
+ await run('ffmpeg',['-y','-v','error','-i',`${evidence}/video.mov`,'-frames:v','1',`${evidence}/video-frame.png`]);
  await page.screenshot({path:`${evidence}/video-desktop.png`,fullPage:true});
  await page.locator('#format-photo-tab').click();assert.match(await page.locator('#format-photo-status').textContent(),/Downloaded/);
  await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:`${evidence}/photo-mobile.png`,fullPage:true});
