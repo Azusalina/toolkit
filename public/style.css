@@ -165,3 +165,14 @@ body.zen-mode{overflow:hidden}
 .format-workspace label{display:block;font-size:13px;margin:12px 0 8px}
 .format-workspace input,.format-workspace select{max-width:100%}
 .format-help{font-size:12px;line-height:1.7;color:#bbb;white-space:pre-line;overflow-wrap:anywhere}
+
+.code-flowchart-mode .sidebar,.code-flowchart-mode #sidebar-toggle,.code-flowchart-mode .file-panel,.code-flowchart-mode #markdown-workspace,.code-flowchart-mode #message,.code-flowchart-mode #connection{display:none!important}
+.code-flowchart-mode main{margin-left:0;width:100%}
+#code-flowchart-workspace{padding:16px;border:1px solid #ffffff18;background:#191919a6}
+#code-flowchart-file{max-width:100%}
+#code-flowchart-source{display:block;width:100%;min-height:220px;resize:vertical;margin:12px 0;padding:12px;border:1px solid #555;background:#161616;color:#eee;font:13px/1.6 ui-monospace,monospace;tab-size:2}
+.code-flowchart-actions{display:flex;flex-wrap:wrap;gap:8px}
+#code-flowchart-name{min-width:0;max-width:100%}
+#code-flowchart-status{font-size:13px;overflow-wrap:anywhere}
+#code-flowchart-preview{overflow:auto;margin-top:16px;max-height:75vh}
+#code-flowchart-image{display:block;max-width:100%;height:auto;background:white}

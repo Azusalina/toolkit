@@ -19,6 +19,10 @@ move tools earlier/later, or **Restore defaults**. These choices are remembered
 in this browser; only toolbar preferences are saved. Hidden tools keep their
 current content and can be shown again at any time.
 
+For **JS / MJS → SVG**, choose a `.js`/`.mjs` file or paste code, click
+**Generate SVG**, enter a filename and click **Download SVG**. Chrome/Chromium
+is required.
+
 For **PDF to Markdown**, install the optional local converter once:
 
 ```bash

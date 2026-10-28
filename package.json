@@ -23,9 +23,11 @@
     "test:pdfmd": "node tests/pdfmd-browser.js",
     "formats:setup": "python3 scripts/setup-formats.py",
     "test:formats": "node tests/formats-browser.js",
-    "test:tex": "node tests/tex-browser.js"
+    "test:tex": "node tests/tex-browser.js",
+    "test:flowchart": "node tests/flowchart-browser.js"
   },
   "dependencies": {
+    "acorn": "8.19.0",
     "highlight.js": "^11.11.1",
     "markdown-it": "^14.1.0",
     "markdown-it-task-lists": "^2.1.1",

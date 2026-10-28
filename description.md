@@ -502,3 +502,38 @@ TeX temporary work can be relocated with `TOOLKIT_TEX_TMPDIR` (an existing direc
 ## Independent repository migration (2026-10-27)
 
 Source and existing local data moved to `/home/a/Documents/products/toolkit`, retaining the product commit history. This checkout now owns its `.git` and `origin`; commit and push here independently. This supersedes the earlier hub-only or root-forwarded publication arrangement. Existing configuration locations, command names, and user data are preserved.
+
+
+## JavaScript flowcharts
+
+**JS / MJS → SVG** parses JavaScript using pinned Acorn, then renders a neutral
+flowchart through the existing offline Mermaid/Chromium renderer. Code is never
+executed or imported. File input and editable pasted code are supported, with an
+inert image preview, editable SVG download name, independent page state and the
+existing hide/reorder navigation preferences. No explanatory paragraphs are added
+to this tool's interface or the generated diagram.
+
+Each function, arrow/callback or class method has a separate flow section, alongside
+module/script initialization. Structured if/else, for/while/do/for-in/for-of loops,
+switch case fallthrough, break/continue, return and explicit throw are represented.
+Expressions, calls, class declarations and try/catch/finally stay atomic source
+blocks; this is static structural visualization, not interprocedural analysis or
+an exhaustive exception/async runtime graph. Long source labels are truncated at
+160 characters. Unsupported labeled jumps report an error; JSX/TypeScript are not
+accepted. The parser tries module syntax first, with script fallback for `.js`.
+
+Limits: 100 KB code, 250 nodes, 480 edges, 40 functions and two active renderer
+jobs (one per view). Seven private-use characters U+E000–U+E006 are reserved for
+safe operator/quote rendering. SVG text is XML-escaped after layout. No code or
+SVG files are written by the server; explicit browser download saves the result.
+
+Run `node --test tests/flowchart.test.js` for graph-path, syntax, size, label and
+API checks, and `npm run test:flowchart` for the real browser file/preview/download,
+Unicode filenames, stale-output invalidation, separate tabs and mobile workflow.
+
+
+2026-10-28 validation: all 31 Node tests passed. The final flowchart graph/API
+checks and browser download workflow also passed after unreachable-path pruning.
+Actual SVG output and desktop/mobile screenshots are in
+`/tmp/toolkit-validation/flowchart/`. Parser API reference:
+[Acorn documentation](https://github.com/acornjs/acorn/tree/master/acorn).

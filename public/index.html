@@ -12,6 +12,7 @@
   <script type="module" src="/tools.js"></script>
   <script type="module" src="/formats.js"></script>
   <script type="module" src="/media.js"></script>
+  <script type="module" src="/code-flowchart.js"></script>
   <script type="module" src="/pdfmd.js"></script>
 </head>
 <body>
@@ -21,7 +22,7 @@
   </aside>
   <main>
     <header class="topbar"><div class="topbar-heading"><button id="sidebar-toggle" aria-controls="sidebar" aria-expanded="true" aria-label="Hide sidebar">Hide sidebar</button><h1 id="tool-title">Markdown / TeX to PDF</h1></div><span id="connection" role="status">Connecting…</span></header>
-    <nav class="tool-modes" aria-label="Toolkit tools"><div id="tool-buttons" class="tool-buttons"><button id="markdown-tab" aria-pressed="true">Markdown / TeX to PDF</button><button id="pdfmd-tab" aria-pressed="false">PDF to Markdown</button><button id="pdf-pages-tab" aria-pressed="false">PDF pages</button><button id="photos-tab" aria-pressed="false">Photos to PDF</button><button id="format-photo-tab" aria-pressed="false">Photo formats</button><button id="format-audio-tab" aria-pressed="false">Audio formats</button><button id="format-video-tab" aria-pressed="false">Video formats</button><button id="media-tab" aria-pressed="false">URL audio</button><button id="omr-tab" aria-pressed="false">OMR scan</button></div><button id="tools-customize" type="button" aria-haspopup="dialog">Customize tools</button></nav>
+    <nav class="tool-modes" aria-label="Toolkit tools"><div id="tool-buttons" class="tool-buttons"><button id="markdown-tab" aria-pressed="true">Markdown / TeX to PDF</button><button id="pdfmd-tab" aria-pressed="false">PDF to Markdown</button><button id="pdf-pages-tab" aria-pressed="false">PDF pages</button><button id="photos-tab" aria-pressed="false">Photos to PDF</button><button id="format-photo-tab" aria-pressed="false">Photo formats</button><button id="format-audio-tab" aria-pressed="false">Audio formats</button><button id="format-video-tab" aria-pressed="false">Video formats</button><button id="media-tab" aria-pressed="false">URL audio</button><button id="code-flowchart-tab" aria-pressed="false">JS / MJS → SVG</button><button id="omr-tab" aria-pressed="false">OMR scan</button></div><button id="tools-customize" type="button" aria-haspopup="dialog">Customize tools</button></nav>
     <section class="file-panel" aria-label="Open local file">
       <label for="filepath">Markdown or TeX file</label>
       <form id="open-form"><input id="filepath" name="path" placeholder="/path/to/notes.md" autocomplete="off" spellcheck="false" required aria-describedby="path-help"><button id="open-button" type="submit">Open file</button></form>
@@ -88,6 +89,13 @@
         <input id="photos-name" value="photos.pdf" autocomplete="off">
       </fieldset>
       <div class="pdf-save-controls"><button id="photos-save" disabled>Save photos as PDF</button><button id="photos-clear" disabled>Clear photos</button></div>
+    </section>
+    <section id="code-flowchart-workspace" hidden aria-label="JavaScript flowchart">
+      <input id="code-flowchart-file" type="file" accept=".js,.mjs" aria-label="JS or MJS file">
+      <textarea id="code-flowchart-source" aria-label="JavaScript code" spellcheck="false" placeholder="JavaScript…"></textarea>
+      <div class="code-flowchart-actions"><button id="code-flowchart-generate">Generate SVG</button><input id="code-flowchart-name" aria-label="SVG filename" value="flowchart.svg"><button id="code-flowchart-download" disabled>Download SVG</button></div>
+      <p id="code-flowchart-status" role="status" aria-live="polite" hidden></p>
+      <div id="code-flowchart-preview"><img id="code-flowchart-image" alt="Code flowchart" hidden></div>
     </section>
     <section id="omr-workspace" aria-label="OMR scan preparation" hidden>
       <label for="omr-file">Local score PDF</label>

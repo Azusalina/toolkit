@@ -1,4 +1,6 @@
 import http from 'node:http';
+import { codeFlowchart, restoreCodeLabels } from './flowchart/index.js';
+import { renderMermaid } from './core/mermaid.js';
 import { FORMAT_OPTIONS, formatOption } from '../public/format-options.js';
 import { convertFormat } from './formats/service.js';
 import { convertPdfMarkdown, abortPdfMarkdown } from './pdfmd/service.js';
@@ -20,9 +22,11 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
   const token = randomBytes(24).toString('hex');
   const style = await documentStyle();
   const views = new Map();
+  let flowchartJobs = 0;
   const initialPath = filename ? path.resolve(baseDir, filename.startsWith('~/') ? path.join(process.env.HOME, filename.slice(2)) : filename) : null;
   if (initialPath) { registry.forFile(initialPath); await readSource(initialPath); }
   const publicFiles = new Map([['/', ['index.html', 'text/html']], ['/app.js', ['app.js', 'text/javascript']], ['/style.css', ['style.css', 'text/css']], ['/document.css', ['document.css', 'text/css']], ['/media.js', ['media.js', 'text/javascript']], ['/pdfmd.js', ['pdfmd.js', 'text/javascript']], ['/tool-preferences.js', ['tool-preferences.js', 'text/javascript']], ['/formats.js', ['formats.js', 'text/javascript']], ['/format-options.js', ['format-options.js', 'text/javascript']], ['/tools.js', ['tools.js', 'text/javascript']], ['/photos.js', ['photos.js', 'text/javascript']], ['/photo-pdf.js', ['photo-pdf.js', 'text/javascript']], ['/pdf-pages.js', ['pdf-pages.js', 'text/javascript']], ['/pdf-selection.js', ['pdf-selection.js', 'text/javascript']], ['/omr.js', ['omr.js', 'text/javascript']], ['/lib/pdf-lib.js', ['../node_modules/pdf-lib/dist/pdf-lib.esm.min.js', 'text/javascript']]]);
+  publicFiles.set('/code-flowchart.js', ['code-flowchart.js', 'text/javascript']);
   publicFiles.set('/tex-preview.js', ['tex-preview.js', 'text/javascript']);
   for (const name of ['pdf.mjs', 'pdf.worker.mjs']) publicFiles.set(`/lib/pdfjs/${name}`, [`../node_modules/pdfjs-dist/build/${name}`, 'text/javascript']);
   for (const folder of ['cmaps', 'standard_fonts', 'wasm']) {
@@ -41,13 +45,14 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
     }, 30 * 60 * 1000);
     view.expiry.unref();
   }
-  async function body(req) {
-    let input = '';
+  async function body(req, limit = 16384) {
+    const chunks = []; let size = 0;
     for await (const chunk of req) {
-      input += chunk;
-      if (input.length > 16384) throw new Error('Request is too large.');
+      size += chunk.length;
+      if (size > limit) throw new Error('Request is too large.');
+      chunks.push(chunk);
     }
-    try { return JSON.parse(input); } catch { throw new Error('Invalid JSON request.'); }
+    try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new Error('Invalid JSON request.'); }
   }
   const json = (res, value, status = 200) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(value)); };
   const server = http.createServer(async (req, res) => {
@@ -101,6 +106,19 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
           if (!view.clients.size && views.has(viewId)) scheduleExpiry(viewId, view);
         });
         return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/flowchart') {
+        if (view.flowchartBusy || flowchartJobs >= 2) return json(res, { error: 'A flowchart is already processing. Try again shortly.' }, 409);
+        view.flowchartBusy = true; flowchartJobs++;
+        try {
+          const options = await body(req, 700000);
+          const name = typeof options.filename === 'string' ? path.basename(options.filename).slice(0, 180) : 'code.js';
+          if (!/\.m?js$/i.test(name)) throw new Error('Choose a .js or .mjs file.');
+          const diagram = codeFlowchart(options.source, name);
+          const [result] = await renderMermaid([diagram]);
+          if (!result.svg) throw new Error(result.error || 'Could not render the flowchart.');
+          return json(res, { svg: restoreCodeLabels(result.svg) });
+        } finally { view.flowchartBusy = false; flowchartJobs--; }
       }
       if (req.method === 'POST' && url.pathname === '/api/pdfmd/convert') return json(res, await convertPdfMarkdown(view, req, res));
       if (req.method === 'POST' && url.pathname === '/api/formats/convert') {
