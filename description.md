@@ -637,3 +637,21 @@ Live-source boundary: the previously supplied document
 `970481430/2025-HKDSE-Economics-Paper-1` returned no printable pages in the fresh
 headless session. No successful real Scribd PDF download is claimed for that URL.
 Scribd-side access or verification behavior may vary by document and environment.
+
+
+## Project-local FFmpeg (2026-10-29)
+
+Run `npm run ffmpeg:setup` to download FFmpeg and ffprobe into this project under
+`tools/ffmpeg/<platform>-<arch>/bin`. Runtime conversion and yt-dlp use these
+executables only, without falling back to system PATH or external FFmpeg env
+overrides. Missing binaries produce an explicit setup instruction.
+
+The installer uses the BtbN GPL 8.1 builds linked from FFmpeg's download page,
+checks the GitHub release asset SHA256 digest before extraction, records build
+provenance, preserves the existing installation until replacement is verified,
+and keeps binaries/licenses local and ignored by Git. Linux x64 and Windows x64
+are supported; Windows needs its built-in tar, Linux needs tar/xz and unzip when
+preparing Windows archives. Other architectures report unsupported explicitly.
+
+[FFmpeg downloads](https://ffmpeg.org/download.html),
+[BtbN build source](https://github.com/BtbN/FFmpeg-Builds).

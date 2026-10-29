@@ -6,3 +6,5 @@ __pycache__/
 
 .venv-scribd/
 /src/scribd-downloader/
+
+/tools/ffmpeg/

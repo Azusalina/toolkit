@@ -1,3 +1,4 @@
+import {localFFmpeg} from '../core/ffmpeg.js';
 import path from 'node:path';
 import {existsSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
@@ -24,7 +25,7 @@ export async function convertFormat(folder,kind,target,signal){
   await runMediaProcess(process.env.TOOLKIT_FORMATS_PYTHON||(existsSync(python)?python:'python3'),[photoWorker,input,output,target],{signal,folder,maxWorkBytes,timeout:120000});
  }else{
   const flags=['-v','error','-protocol_whitelist','file,pipe','-format_whitelist',containers];
-  const probe=JSON.parse(await runMediaProcess(process.env.TOOLKIT_FFPROBE||'ffprobe',[...flags,'-show_streams','-show_format','-of','json',input],{signal,folder,maxWorkBytes,timeout:30000}));
+  const probe=JSON.parse(await runMediaProcess(localFFmpeg('ffprobe'),[...flags,'-show_streams','-show_format','-of','json',input],{signal,folder,maxWorkBytes,timeout:30000}));
   const streams=probe.streams||[],sound=streams.find(s=>s.codec_type==='audio'),picture=streams.find(s=>s.codec_type==='video'&&!s.disposition?.attached_pic);
   let options;
   if(kind==='audio'){
@@ -34,7 +35,7 @@ export async function convertFormat(folder,kind,target,signal){
    if(!picture||/avif|avis|heic/i.test(probe.format?.tags?.major_brand||''))throw new Error('Choose a video file with a video stream.');
    options=['-map',`0:${picture.index}`,'-map','0:a:0?','-vf','pad=ceil(iw/2)*2:ceil(ih/2)*2','-pix_fmt',target==='prores'?'yuv422p10le':'yuv420p',...video[target]];
   }
-  await runMediaProcess(process.env.TOOLKIT_FFMPEG||'ffmpeg',['-nostdin',...flags,'-i',input,...options,'-threads','2',output],{signal,folder,maxWorkBytes,timeout:kind==='video'?900000:600000});
+  await runMediaProcess(localFFmpeg('ffmpeg'),['-nostdin',...flags,'-i',input,...options,'-threads','2',output],{signal,folder,maxWorkBytes,timeout:kind==='video'?900000:600000});
  }
  if(!(await stat(output)).size)throw new Error('Converter produced an empty file.');
  return filename;

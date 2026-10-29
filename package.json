@@ -26,7 +26,8 @@
     "test:tex": "node tests/tex-browser.js",
     "test:flowchart": "node tests/flowchart-browser.js",
     "scribd:setup": "python3 scripts/setup-scribd.py",
-    "test:scribd": ".venv-scribd/bin/python tests/test_scribd.py && node tests/scribd-browser.js"
+    "test:scribd": ".venv-scribd/bin/python tests/test_scribd.py && node tests/scribd-browser.js",
+    "ffmpeg:setup": "node scripts/setup-ffmpeg.mjs"
   },
   "dependencies": {
     "acorn": "8.19.0",

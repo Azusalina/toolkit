@@ -1,3 +1,4 @@
+import {localFFmpeg} from '../core/ffmpeg.js';
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm, readdir, stat } from 'node:fs/promises';
 import { createReadStream, existsSync } from 'node:fs';
@@ -31,10 +32,10 @@ async function sizeOf(folder) {
   for (const name of await readdir(folder)) size += (await stat(path.join(folder,name)).catch(()=>({size:0}))).size;
   return size;
 }
-export async function runMediaProcess(command, args, { input, signal, folder, timeout = 600000, maxWorkBytes = LIMIT } = {}) {
+export async function runMediaProcess(command, args, { input, signal, folder, timeout = 600000, maxWorkBytes = LIMIT, env = process.env } = {}) {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) return reject(new Error('Cancelled.'));
-    const child = spawn(command, args, { detached: process.platform !== 'win32', stdio:['pipe','pipe','pipe'] });
+    const child = spawn(command, args, { env, detached: process.platform !== 'win32', stdio:['pipe','pipe','pipe'] });
     let out='', err='', failure;
     const stop = reason => {
       failure ||= new Error(reason);
@@ -58,7 +59,7 @@ export async function runMediaProcess(command, args, { input, signal, folder, ti
 }
 async function worker(input, options) {
   const python=process.env.TOOLKIT_MEDIA_PYTHON || (existsSync(localPython)?localPython:'python3');
-  const stdout=await runMediaProcess(python,[script],{...options,input});
+  const stdout=await runMediaProcess(python,[script],{...options,input,env:{...process.env,TOOLKIT_FFMPEG:localFFmpeg('ffmpeg'),TOOLKIT_FFPROBE:localFFmpeg('ffprobe')}});
   return JSON.parse(stdout);
 }
 export async function scanMedia(view, url, signal) {
@@ -97,7 +98,7 @@ export async function downloadMedia(view, options, folder, signal) {
 export async function convertMedia(folder, format, signal) {
   mediaFormat(format,false);
   const filename=`converted.${format}`;
-  await runMediaProcess(process.env.TOOLKIT_FFMPEG||'ffmpeg',['-nostdin','-v','error','-protocol_whitelist','file,pipe','-format_whitelist','wav,mp3,flac,ogg,mov,matroska,webm,aac,aiff,asf,avi,mpegts,mpeg','-i',path.join(folder,'input'),'-map','0:a:0','-vn',...(format==='mp3'?['-c:a','libmp3lame','-q:a','0']:['-c:a','flac']),path.join(folder,filename)],{signal,folder});
+  await runMediaProcess(localFFmpeg('ffmpeg'),['-nostdin','-v','error','-protocol_whitelist','file,pipe','-format_whitelist','wav,mp3,flac,ogg,mov,matroska,webm,aac,aiff,asf,avi,mpegts,mpeg','-i',path.join(folder,'input'),'-map','0:a:0','-vn',...(format==='mp3'?['-c:a','libmp3lame','-q:a','0']:['-c:a','flac']),path.join(folder,filename)],{signal,folder});
   return filename;
 }
 export async function sendMedia(res, folder, filename, { maxBytes = LIMIT, contentType } = {}) {

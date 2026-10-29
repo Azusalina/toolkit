@@ -88,14 +88,16 @@ Install or update photo support with `npm run formats:setup` (Python 3/venv requ
 DNG inputs are developed locally; TIFF output retains their 16-bit RGB data.
 DNG export produces linear RGB, not recovered camera sensor RAW; transparency
 is flattened onto white.
-Audio/video conversion requires FFmpeg and ffprobe on PATH. Files are processed
+Install project-local FFmpeg and ffprobe with `npm run ffmpeg:setup`.
+Audio/video conversion uses only `tools/ffmpeg/<platform>-<arch>/bin`, with no
+system PATH fallback. Files are processed
 on this computer by the local toolkit server. Input limits: photos 25 MB and
 32 megapixels, audio 100 MB, video 250 MB. **Cancel current conversion** works
 even after switching between these three tools. Lossy formats re-encode the
 source; converting to a lossless format cannot recover discarded information.
 
 For URL audio downloads and local audio conversion, install the optional media
-support once (Python 3 with venv support, plus FFmpeg on PATH):
+support once (Python 3 with venv support, plus project-local FFmpeg installed using `npm run ffmpeg:setup`):
 
 ```bash
 npm run media:setup
