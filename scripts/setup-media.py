@@ -8,4 +8,4 @@ folder = root / '.venv-media'
 venv.EnvBuilder(with_pip=True).create(folder)
 python = folder / ('Scripts/python.exe' if sys.platform == 'win32' else 'bin/python')
 subprocess.run([str(python), '-m', 'pip', 'install', '--upgrade', 'yt-dlp'], check=True)
-print('Media setup ready. FFmpeg must also be on PATH.')
+print('Media setup ready. Run npm run ffmpeg:setup for project-local FFmpeg.')

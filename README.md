@@ -115,7 +115,9 @@ lossless encoding of the decoded source; it cannot restore details missing from
 a compressed original. Conversion uses the local toolkit server and preserves
 the input file. **Cancel** stops processing. URL requests happen only after an
 explicit scan/download; audio work uses temporary files which are removed after
-completion, cancellation or errors. Re-run `npm run media:setup` to update yt-dlp.
+cancellation or errors. Ready URL audio stays available for 15 minutes and is
+then removed; the download link can be reused during that time. Re-run
+`npm run media:setup` to update yt-dlp.
 
 Select **A4** or **Letter** and **White paper**, **Yellow paper**, or **Black paper**, then click **Export PDF** to download the current saved version. PDF background defaults to white and is independent of the dark preview. A heading and its content up to the next heading move together to the next page when they do not fit; sections longer than a full page can span pages. No PDF is generated automatically. Your browser controls the download location.
 
@@ -180,3 +182,13 @@ lets you choose the result directory and filename. This integration is separate
 from the existing local web login service.
 
 This is an independent repository at `/home/a/Documents/products/toolkit`, published as [Azusalina/toolkit](https://github.com/Azusalina/toolkit). Run `git add`, `git commit`, and `git push` here. Its source has moved out of `someProducts`; hub pushes no longer publish this project.
+
+
+**URL audio:** choose the listed items and MP3/FLAC/original, then download.
+Progress shows the background download and conversion stages; **Cancel** stops
+the task. The ready link downloads directly through your browser and stays
+available for 15 minutes, including retries. **Check progress** reconnects after
+a temporary status connection failure in the same page. Source limit: 1 GiB per
+item; result: 2 GiB; processing: 60 minutes; temporary working space: up to 4 GiB
+per active task. FLAC can be much larger than the source; choose original audio
+to avoid re-encoding or MP3 for a smaller file.
