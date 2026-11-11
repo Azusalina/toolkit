@@ -1,3 +1,4 @@
+import { OfficeConverter } from './office/service.js';
 import { MediaJobs } from './media/jobs.js';
 import http from 'node:http';
 import { ScribdJobs } from './scribd/service.js';
@@ -19,9 +20,10 @@ import { readSource, documentStyle } from './core/files.js';
 import { exportPdf } from './core/pdf.js';
 import { scanMedia, withMediaWork, downloadMedia, convertMedia, sendMedia, mediaFormat, abortMedia } from './media/service.js';
 
-export async function createToolkit({ port = 4177, filename, interval = 300, baseDir = process.cwd(), scribdOptions, mediaOptions } = {}) {
+export async function createToolkit({ port = 4177, filename, interval = 300, baseDir = process.cwd(), scribdOptions, mediaOptions, officeOptions } = {}) {
   const scribd = new ScribdJobs(scribdOptions);
   const mediaJobs = new MediaJobs(mediaOptions);
+  const office = new OfficeConverter(officeOptions);
   const registry = new ModuleRegistry();
   const token = randomBytes(24).toString('hex');
   const style = await documentStyle();
@@ -32,6 +34,7 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
   const publicFiles = new Map([['/', ['index.html', 'text/html']], ['/app.js', ['app.js', 'text/javascript']], ['/style.css', ['style.css', 'text/css']], ['/document.css', ['document.css', 'text/css']], ['/media.js', ['media.js', 'text/javascript']], ['/pdfmd.js', ['pdfmd.js', 'text/javascript']], ['/tool-preferences.js', ['tool-preferences.js', 'text/javascript']], ['/formats.js', ['formats.js', 'text/javascript']], ['/format-options.js', ['format-options.js', 'text/javascript']], ['/tools.js', ['tools.js', 'text/javascript']], ['/photos.js', ['photos.js', 'text/javascript']], ['/photo-pdf.js', ['photo-pdf.js', 'text/javascript']], ['/pdf-pages.js', ['pdf-pages.js', 'text/javascript']], ['/pdf-selection.js', ['pdf-selection.js', 'text/javascript']], ['/omr.js', ['omr.js', 'text/javascript']], ['/lib/pdf-lib.js', ['../node_modules/pdf-lib/dist/pdf-lib.esm.min.js', 'text/javascript']]]);
   publicFiles.set('/code-flowchart.js', ['code-flowchart.js', 'text/javascript']);
   publicFiles.set('/scribd.js', ['scribd.js', 'text/javascript']);
+  publicFiles.set('/office.js', ['office.js', 'text/javascript']);
   publicFiles.set('/tex-preview.js', ['tex-preview.js', 'text/javascript']);
   for (const name of ['pdf.mjs', 'pdf.worker.mjs']) publicFiles.set(`/lib/pdfjs/${name}`, [`../node_modules/pdfjs-dist/build/${name}`, 'text/javascript']);
   for (const folder of ['cmaps', 'standard_fonts', 'wasm']) {
@@ -48,6 +51,7 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
       if (view.clients.size || view.exporting) return scheduleExpiry(viewId, view);
       scribd.clear(viewId).catch(() => {});
       mediaJobs.clear(view).catch(() => {});
+      office.abort(view);
       view.close(); views.delete(viewId);
     }, 30 * 60 * 1000);
     view.expiry.unref();
@@ -134,6 +138,7 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
       if (url.pathname === '/api/scribd/start' && req.method === 'POST') return json(res, await scribd.start(viewId, await body(req)));
       if (url.pathname === '/api/scribd/status' && req.method === 'GET') return json(res, scribd.status(viewId));
       if (url.pathname === '/api/scribd/cancel' && req.method === 'POST') { await scribd.clear(viewId); return json(res, scribd.status(viewId)); }
+      if(req.method==='POST'&&url.pathname==='/api/office/convert')return await office.convert(view,req,res,{extension:url.searchParams.get('extension'),sheets:url.searchParams.get('sheets')||'print'});
       if (req.method === 'POST' && url.pathname === '/api/pdfmd/convert') return json(res, await convertPdfMarkdown(view, req, res));
       if (req.method === 'POST' && url.pathname === '/api/formats/convert') {
         const kind=url.searchParams.get('kind'),format=url.searchParams.get('format');
@@ -237,6 +242,7 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve); });
   const url = `http://127.0.0.1:${server.address().port}/`;
   const close = async () => {
+    await office.close();
     await mediaJobs.close();
     await scribd.close();
     for (const view of views.values()) { abortMedia(view); abortPdfMarkdown(view); view.close(); }
