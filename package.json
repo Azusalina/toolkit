@@ -28,7 +28,8 @@
     "scribd:setup": "python3 scripts/setup-scribd.py",
     "test:scribd": ".venv-scribd/bin/python tests/test_scribd.py && node tests/scribd-browser.js",
     "ffmpeg:setup": "node scripts/setup-ffmpeg.mjs",
-    "test:office": "node tests/office-browser.js"
+    "test:office": "node tests/office-browser.js",
+    "test:html": "node tests/markdown-html-browser.js"
   },
   "dependencies": {
     "acorn": "8.19.0",
@@ -38,6 +39,7 @@
     "mermaid": "^12.1.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.4.299",
-    "playwright-core": "^1.56.0"
+    "playwright-core": "^1.56.0",
+    "sanitize-html": "^2.18.2"
   }
 }
