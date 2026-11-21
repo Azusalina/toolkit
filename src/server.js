@@ -74,7 +74,12 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
     res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self' blob: about:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
     const host = req.headers.host;
     const origin = `http://127.0.0.1:${server.address().port}`;
-    if (host !== new URL(origin).host || (req.headers.origin && req.headers.origin !== origin) || req.headers['sec-fetch-site'] === 'cross-site') return json(res, { error: 'Invalid local origin.' }, 403);
+    // Local launchers can navigate here from another site (e.g. localhost → 127.0.0.1).
+    // Only the static entry document may bootstrap a session this way, never APIs or frames.
+    const entryNavigation = req.method === 'GET' && /^\/(?:\?|$)/.test(req.url) &&
+      req.headers['sec-fetch-mode'] === 'navigate' && req.headers['sec-fetch-dest'] === 'document';
+    if (host !== new URL(origin).host || (req.headers.origin && req.headers.origin !== origin) ||
+      (req.headers['sec-fetch-site'] === 'cross-site' && !entryNavigation)) return json(res, { error: 'Invalid local origin.' }, 403);
     const url = new URL(req.url, origin);
     // Port-specific names let separate toolkit processes coexist in one browser.
     const sessionCookie = `toolkit_session_${server.address().port}=${token}`;
