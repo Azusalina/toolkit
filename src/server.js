@@ -34,6 +34,7 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
   const publicFiles = new Map([['/', ['index.html', 'text/html']], ['/app.js', ['app.js', 'text/javascript']], ['/style.css', ['style.css', 'text/css']], ['/document.css', ['document.css', 'text/css']], ['/media.js', ['media.js', 'text/javascript']], ['/pdfmd.js', ['pdfmd.js', 'text/javascript']], ['/tool-preferences.js', ['tool-preferences.js', 'text/javascript']], ['/formats.js', ['formats.js', 'text/javascript']], ['/format-options.js', ['format-options.js', 'text/javascript']], ['/tools.js', ['tools.js', 'text/javascript']], ['/photos.js', ['photos.js', 'text/javascript']], ['/photo-pdf.js', ['photo-pdf.js', 'text/javascript']], ['/pdf-pages.js', ['pdf-pages.js', 'text/javascript']], ['/pdf-selection.js', ['pdf-selection.js', 'text/javascript']], ['/omr.js', ['omr.js', 'text/javascript']], ['/lib/pdf-lib.js', ['../node_modules/pdf-lib/dist/pdf-lib.esm.min.js', 'text/javascript']]]);
   publicFiles.set('/code-flowchart.js', ['code-flowchart.js', 'text/javascript']);
   publicFiles.set('/scribd.js', ['scribd.js', 'text/javascript']);
+  publicFiles.set('/theme.js', ['theme.js', 'text/javascript']);
   publicFiles.set('/office.js', ['office.js', 'text/javascript']);
   publicFiles.set('/tex-preview.js', ['tex-preview.js', 'text/javascript']);
   for (const name of ['pdf.mjs', 'pdf.worker.mjs']) publicFiles.set(`/lib/pdfjs/${name}`, [`../node_modules/pdfjs-dist/build/${name}`, 'text/javascript']);
