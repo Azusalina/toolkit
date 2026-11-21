@@ -55,6 +55,7 @@ export class DocumentSession {
     return this.state;
   }
   close() {
+    this.previewController?.abort();
     this.generation++;
     this.renderController?.abort();
     this.watcher?.stop();

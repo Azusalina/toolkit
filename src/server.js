@@ -34,6 +34,7 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
   const publicFiles = new Map([['/', ['index.html', 'text/html']], ['/app.js', ['app.js', 'text/javascript']], ['/style.css', ['style.css', 'text/css']], ['/document.css', ['document.css', 'text/css']], ['/media.js', ['media.js', 'text/javascript']], ['/pdfmd.js', ['pdfmd.js', 'text/javascript']], ['/tool-preferences.js', ['tool-preferences.js', 'text/javascript']], ['/formats.js', ['formats.js', 'text/javascript']], ['/format-options.js', ['format-options.js', 'text/javascript']], ['/tools.js', ['tools.js', 'text/javascript']], ['/photos.js', ['photos.js', 'text/javascript']], ['/photo-pdf.js', ['photo-pdf.js', 'text/javascript']], ['/pdf-pages.js', ['pdf-pages.js', 'text/javascript']], ['/pdf-selection.js', ['pdf-selection.js', 'text/javascript']], ['/omr.js', ['omr.js', 'text/javascript']], ['/lib/pdf-lib.js', ['../node_modules/pdf-lib/dist/pdf-lib.esm.min.js', 'text/javascript']]]);
   publicFiles.set('/code-flowchart.js', ['code-flowchart.js', 'text/javascript']);
   publicFiles.set('/scribd.js', ['scribd.js', 'text/javascript']);
+  publicFiles.set('/page-preview.js', ['page-preview.js', 'text/javascript']);
   publicFiles.set('/theme.js', ['theme.js', 'text/javascript']);
   publicFiles.set('/office.js', ['office.js', 'text/javascript']);
   publicFiles.set('/tex-preview.js', ['tex-preview.js', 'text/javascript']);
@@ -71,7 +72,7 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self' blob: about:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; frame-src 'self' blob: about:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
     const host = req.headers.host;
     const origin = `http://127.0.0.1:${server.address().port}`;
     // Local launchers can navigate here from another site (e.g. localhost → 127.0.0.1).
@@ -88,7 +89,7 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
         const [file, type] = publicFiles.get(url.pathname);
         if (url.pathname === '/') res.setHeader('Set-Cookie', `${sessionCookie}; Path=/; HttpOnly; SameSite=Strict`);
         res.writeHead(200, { 'Content-Type': `${type}; charset=utf-8` });
-        return res.end(await readFile(new URL(`../public/${file}`, import.meta.url)));
+        return res.end(url.pathname === '/document.css' ? style : await readFile(new URL(`../public/${file}`, import.meta.url)));
       }
       if (!url.pathname.startsWith('/api/')) return json(res, { error: 'Not found.' }, 404);
       if (!(req.headers.cookie || '').split(';').some(cookie => cookie.trim() === sessionCookie)) return json(res, { error: 'Refresh the toolkit at its local address to start a session. Allow cookies for this local address.' }, 403);
@@ -215,6 +216,26 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
           return json(res,data);
         } finally {await rm(work,{recursive:true,force:true});}
       }
+      if (req.method === 'POST' && url.pathname === '/api/preview/pdf') {
+        const options = await body(req);
+        if (!['A4', 'Letter'].includes(options.paper)) throw new Error('Choose A4 or Letter paper.');
+        if (!['white', 'yellow', 'black'].includes(options.background)) throw new Error('Choose white, yellow, or black PDF background.');
+        const snapshot = view.state;
+        if (!snapshot || snapshot.module !== 'markdown' || snapshot.error) throw new Error('Open a valid Markdown file first.');
+        view.previewController?.abort();
+        const controller = view.previewController = new AbortController();
+        const disconnected = () => { if (!res.writableEnded) controller.abort(); };
+        res.on('close', disconnected);
+        try {
+          const buffer = await exportPdf(snapshot.html, style, {...options, title:snapshot.title}, {signal:controller.signal});
+          if (controller.signal.aborted || res.destroyed) return;
+          res.writeHead(200, {'Content-Type':'application/pdf'});
+          return res.end(buffer);
+        } finally {
+          res.off('close', disconnected);
+          if (view.previewController === controller) view.previewController = null;
+        }
+      }
       if (req.method === 'POST' && url.pathname === '/api/export/pdf') {
         const options = await body(req);
         if (!['A4', 'Letter'].includes(options.paper)) throw new Error('Choose A4 or Letter paper.');
@@ -240,6 +261,7 @@ export async function createToolkit({ port = 4177, filename, interval = 300, bas
       }
       return json(res, { error: 'Not found.' }, 404);
     } catch (error) {
+      if (res.destroyed) return;
       if (!res.headersSent) json(res, { error: error.code === 'ENOENT' ? 'File not found. Check the local path.' : error.message }, error.status || 400);
       else res.end();
     }

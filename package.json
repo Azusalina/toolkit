@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Local modular live file preview and manual PDF export",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "start": "node src/cli.js",
@@ -30,11 +30,14 @@
     "test:scribd": ".venv-scribd/bin/python tests/test_scribd.py && node tests/scribd-browser.js",
     "ffmpeg:setup": "node scripts/setup-ffmpeg.mjs",
     "test:office": "node tests/office-browser.js",
-    "test:html": "node tests/markdown-html-browser.js"
+    "test:html": "node tests/markdown-html-browser.js",
+    "test:math": "node --test tests/markdown-math.test.js && node tests/markdown-pages-browser.js"
   },
   "dependencies": {
+    "@mdit/plugin-tex": "1.0.2",
     "acorn": "8.19.0",
     "highlight.js": "^11.11.1",
+    "katex": "0.19.1",
     "markdown-it": "^14.1.0",
     "markdown-it-task-lists": "^2.1.1",
     "mermaid": "^12.1.0",
