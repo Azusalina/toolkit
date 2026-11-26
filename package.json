@@ -31,12 +31,15 @@
     "ffmpeg:setup": "node scripts/setup-ffmpeg.mjs",
     "test:office": "node tests/office-browser.js",
     "test:html": "node tests/markdown-html-browser.js",
-    "test:math": "node --test tests/markdown-math.test.js && node tests/markdown-pages-browser.js"
+    "test:math": "node --test tests/markdown-math.test.js && node tests/markdown-pages-browser.js",
+    "test:layout": "node --test tests/layout-svg.test.js && node tests/layout-svg-browser.js"
   },
   "dependencies": {
     "@mdit/plugin-tex": "1.0.2",
     "acorn": "8.19.0",
+    "domutils": "4.0.2",
     "highlight.js": "^11.11.1",
+    "htmlparser2": "12.0.0",
     "katex": "0.19.1",
     "markdown-it": "^14.1.0",
     "markdown-it-task-lists": "^2.1.1",
